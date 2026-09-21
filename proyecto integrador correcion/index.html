@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- ====================================================================
+         1. METADATOS BÁSICOS Y CONFIGURACIÓN DE LA PÁGINA
+         ==================================================================== -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoGold 3D | Calculadora de Geometría Espacial Interactiva</title>
+    
+    <!-- Fuentes de Google: Cinzel (Títulos), Outfit (Texto base) y Fira Code (Números) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Framework de Estilos: Tailwind CSS (Vía CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configuración de la paleta de colores oficial de GeoGold
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'geo-void': '#090A0C',       // Fondo negro carbón principal
+                        'geo-surface': '#121316',    // Fondo de las tarjetas y contenedores
+                        'geo-panel': '#1A1B20',      // Fondo de cajas secundarias e inputs
+                        'geo-border': '#2B2D35',     // Color de bordes y líneas divisorias
+                        'geo-gold': {
+                            DEFAULT: '#D4AF37',      // Dorado GeoGold clásico
+                            light: '#F6E05E',        // Dorado claro para luces y reflejos
+                            dark: '#A68218'          // Dorado oscuro
+                        },
+                        'geo-ink': '#F9FAFB',        // Blanco brillante para texto
+                        'geo-muted': '#9CA3AF'       // Gris secundario para etiquetas
+                    },
+                    fontFamily: {
+                        display: ['Cinzel', 'serif'],     // Fuente romana para títulos
+                        body: ['Outfit', 'sans-serif'],   // Fuente moderna para lectura
+                        mono: ['Fira Code', 'monospace']  // Fuente técnica para números y fórmulas
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Enlace a la Hoja de Estilos CSS Externa (Personalización de Sliders) -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Librerías Externas para los Gráficos 3D -->
+    <!-- Three.js: Motor gráfico tridimensional WebGL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls: Permite rotar, mover y hacer zoom con el mouse sobre las figuras 3D -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body class="bg-geo-void text-geo-ink font-body min-h-screen flex flex-col antialiased selection:bg-geo-gold selection:text-black">
+
+    <!-- ====================================================================
+         2. BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR)
+         ==================================================================== -->
+    <nav class="border-b border-geo-border bg-geo-surface/90 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logotipo GeoGold -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-geo-panel border border-geo-gold/80 flex items-center justify-center text-geo-gold font-display font-bold text-xl shadow-[0_0_15px_rgba(212,175,55,0.25)]">
+                    Ω
+                </div>
+                <div>
+                    <span class="text-xl font-display font-bold tracking-wider text-geo-ink block leading-tight">
+                        GEO<span class="text-geo-gold">GOLD</span> <span class="text-xs font-mono text-geo-gold border border-geo-gold/40 px-1.5 py-0.5 rounded ml-1">3D</span>
+                    </span>
+                    <span class="text-[11px] text-geo-muted font-mono tracking-tight">Geometría Espacial Interactiva</span>
+                </div>
+            </div>
+
+            <!-- Selector de Figuras (Botones más grandes y visibles) -->
+            <div class="flex items-center bg-geo-panel p-1.5 rounded-xl border border-geo-border gap-1.5">
+                <button id="tab-cube" onclick="switchFigure('cube')" class="figure-tab flex items-center space-x-2.5 px-5 sm:px-6 py-2.5 rounded-lg text-base font-bold transition duration-200 bg-geo-gold text-black shadow-md">
+                    <span class="text-lg sm:text-xl">📦</span>
+                    <span>Cubo</span>
+                </button>
+                <button id="tab-sphere" onclick="switchFigure('sphere')" class="figure-tab flex items-center space-x-2.5 px-5 sm:px-6 py-2.5 rounded-lg text-base font-semibold text-geo-muted hover:text-geo-ink transition duration-200">
+                    <span class="text-lg sm:text-xl">🌐</span>
+                    <span>Esfera</span>
+                </button>
+                <button id="tab-cone" onclick="switchFigure('cone')" class="figure-tab flex items-center space-x-2.5 px-5 sm:px-6 py-2.5 rounded-lg text-base font-semibold text-geo-muted hover:text-geo-ink transition duration-200">
+                    <span class="text-lg sm:text-xl">🔺</span>
+                    <span>Cono</span>
+                </button>
+            </div>
+
+            <!-- Indicador de Estado del Motor 3D -->
+            <div class="hidden sm:flex items-center space-x-2 text-xs font-mono text-geo-muted border border-geo-border px-3 py-1.5 rounded-full bg-geo-panel">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Motor Three.js WebGL Activo</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ====================================================================
+         3. ENCABEZADO DE LA FIGURA SELECCIONADA
+         ==================================================================== -->
+    <header class="max-w-7xl mx-auto px-6 pt-8 pb-4 w-full">
+        <div class="flex flex-col md:flex-row md:items-end justify-between border-b border-geo-border/60 pb-5 gap-4">
+            <div>
+                <div class="flex items-center space-x-3 mb-1">
+                    <span id="fig-number-badge" class="text-xs font-mono text-geo-gold border border-geo-gold/40 px-2.5 py-0.5 rounded-full bg-geo-panel">
+                        Figura 01
+                    </span>
+                    <span class="text-xs font-mono text-geo-muted">Cálculo de Área y Volumen</span>
+                </div>
+                <h1 id="fig-title" class="text-3xl sm:text-4xl font-display font-black text-geo-ink tracking-wide">
+                    Calculadora de <span class="text-geo-gold">Cubo</span>
+                </h1>
+            </div>
+            <!-- Muestra visual de las fórmulas de la figura activa -->
+            <div class="bg-geo-panel/90 border border-geo-border px-4 py-2.5 rounded-xl font-mono text-xs sm:text-sm text-geo-muted">
+                <span class="text-geo-gold font-bold">Fórmulas:</span>
+                <span id="fig-formula-preview" class="text-geo-ink ml-1.5">V = a³ &nbsp;|&nbsp; A = 6·a²</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ====================================================================
+         4. CUERPO PRINCIPAL DEL DASHBOARD (DISEÑO A DOS COLUMNAS)
+         ==================================================================== -->
+    <main class="max-w-7xl mx-auto px-6 py-6 w-full flex-1">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- ------------------------------------------------------------
+                 COLUMNA IZQUIERDA (5 Columnas): CONTROLES Y SLIDERS
+                 ------------------------------------------------------------ -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+
+                <!-- TARJETA 1: DIMENSIONES (BARRAS DESLIZADORAS / SLIDERS) -->
+                <div class="bg-geo-surface rounded-2xl border border-geo-border p-6 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-geo-gold/5 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div class="flex items-center justify-between border-b border-geo-border/80 pb-3 mb-6">
+                        <h2 class="text-xl font-display font-bold text-geo-ink flex items-center gap-2">
+                            <span class="text-geo-gold">⚡</span> Dimensiones
+                        </h2>
+                        <span class="text-xs font-mono text-geo-muted">Ajuste en Tiempo Real</span>
+                    </div>
+
+                    <!-- CONTROLES PARA EL CUBO: LADO O ARISTA (A) -->
+                    <div id="controls-cube" class="space-y-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="slider-cube-a" class="text-xs font-bold font-mono uppercase tracking-wider text-geo-muted">
+                                    Longitud del Lado / Arista (<span class="text-geo-gold">a</span>)
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <!-- Barra deslizadora -->
+                                <div class="flex-1">
+                                    <input type="range" id="slider-cube-a" min="1" max="20" step="0.5" value="5" oninput="onCubeInput(this.value)">
+                                    <div class="flex justify-between text-[10px] font-mono text-geo-muted mt-1">
+                                        <span>1 cm</span>
+                                        <span>10 cm</span>
+                                        <span>20 cm</span>
+                                    </div>
+                                </div>
+                                <!-- Input numérico sincronizado -->
+                                <div class="flex items-center bg-geo-panel border border-geo-border rounded-xl px-3 py-2 w-28 focus-within:border-geo-gold transition">
+                                    <input type="number" id="num-cube-a" min="0.1" max="50" step="0.5" value="5" oninput="onCubeInput(this.value)"
+                                           class="bg-transparent text-geo-ink font-mono font-bold text-base w-full outline-none text-right pr-1">
+                                    <span class="text-geo-muted font-mono text-xs">cm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONTROLES PARA LA ESFERA: RADIO (R) (Oculto inicialmente) -->
+                    <div id="controls-sphere" class="space-y-6 hidden">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="slider-sphere-r" class="text-xs font-bold font-mono uppercase tracking-wider text-geo-muted">
+                                    Radio de la Esfera (<span class="text-geo-gold">r</span>)
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1">
+                                    <input type="range" id="slider-sphere-r" min="1" max="20" step="0.5" value="5" oninput="onSphereInput(this.value)">
+                                    <div class="flex justify-between text-[10px] font-mono text-geo-muted mt-1">
+                                        <span>1 cm</span>
+                                        <span>10 cm</span>
+                                        <span>20 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-geo-panel border border-geo-border rounded-xl px-3 py-2 w-28 focus-within:border-geo-gold transition">
+                                    <input type="number" id="num-sphere-r" min="0.1" max="50" step="0.5" value="5" oninput="onSphereInput(this.value)"
+                                           class="bg-transparent text-geo-ink font-mono font-bold text-base w-full outline-none text-right pr-1">
+                                    <span class="text-geo-muted font-mono text-xs">cm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONTROLES PARA EL CONO: RADIO BASE (R) + ALTURA (H) (Oculto inicialmente) -->
+                    <div id="controls-cone" class="space-y-6 hidden">
+                        <!-- Radio Base -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="slider-cone-r" class="text-xs font-bold font-mono uppercase tracking-wider text-geo-muted">
+                                    Radio de la Base (<span class="text-geo-gold">r</span>)
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1">
+                                    <input type="range" id="slider-cone-r" min="1" max="15" step="0.5" value="4" oninput="onConeInput()">
+                                    <div class="flex justify-between text-[10px] font-mono text-geo-muted mt-1">
+                                        <span>1 cm</span>
+                                        <span>8 cm</span>
+                                        <span>15 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-geo-panel border border-geo-border rounded-xl px-3 py-2 w-28 focus-within:border-geo-gold transition">
+                                    <input type="number" id="num-cone-r" min="0.1" max="30" step="0.5" value="4" oninput="syncConeNumToSlider('r')"
+                                           class="bg-transparent text-geo-ink font-mono font-bold text-base w-full outline-none text-right pr-1">
+                                    <span class="text-geo-muted font-mono text-xs">cm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Altura -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="slider-cone-h" class="text-xs font-bold font-mono uppercase tracking-wider text-geo-muted">
+                                    Altura del Cono (<span class="text-geo-gold">h</span>)
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1">
+                                    <input type="range" id="slider-cone-h" min="1" max="20" step="0.5" value="7" oninput="onConeInput()">
+                                    <div class="flex justify-between text-[10px] font-mono text-geo-muted mt-1">
+                                        <span>1 cm</span>
+                                        <span>10 cm</span>
+                                        <span>20 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-geo-panel border border-geo-border rounded-xl px-3 py-2 w-28 focus-within:border-geo-gold transition">
+                                    <input type="number" id="num-cone-h" min="0.1" max="40" step="0.5" value="7" oninput="syncConeNumToSlider('h')"
+                                           class="bg-transparent text-geo-ink font-mono font-bold text-base w-full outline-none text-right pr-1">
+                                    <span class="text-geo-muted font-mono text-xs">cm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón Restablecer Valores -->
+                    <div class="mt-6 pt-4 border-t border-geo-border/60 flex justify-between items-center">
+                        <span class="text-xs text-geo-muted font-mono">¿Reiniciar medidas?</span>
+                        <button onclick="resetCurrentFigure()" class="text-xs font-mono text-geo-muted hover:text-geo-gold border border-geo-border hover:border-geo-gold/40 px-3 py-1.5 rounded-lg bg-geo-panel transition flex items-center gap-1.5">
+                            <span>↺</span> Restaurar
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ------------------------------------------------------------
+                 COLUMNA DERECHA (7 Columnas): RESULTADOS GIGANTES Y VISOR 3D
+                 ------------------------------------------------------------ -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+
+                <!-- TARJETAS DE RESULTADOS PRINCIPALES -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    <!-- Tarjeta: Volumen Total (V) -->
+                    <div class="bg-geo-surface rounded-2xl border border-geo-border hover:border-geo-gold/50 p-5 transition duration-300 relative overflow-hidden group">
+                        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-geo-gold/10 rounded-full blur-xl group-hover:bg-geo-gold/20 transition duration-500"></div>
+                        <span class="text-xs font-mono font-bold uppercase tracking-wider text-geo-muted block mb-1">
+                            Volumen Total (V)
+                        </span>
+                        <div class="flex items-baseline space-x-1.5">
+                            <span id="metric-volume" class="text-3xl sm:text-4xl font-display font-black text-geo-ink tracking-tight">
+                                125.00
+                            </span>
+                            <span class="text-base sm:text-lg font-mono font-bold text-geo-gold">cm³</span>
+                        </div>
+                        <div class="mt-2 text-[11px] font-mono text-geo-muted flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-geo-gold"></span>
+                            <span>Capacidad tridimensional</span>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta: Área Superficial Total (A) -->
+                    <div class="bg-geo-surface rounded-2xl border border-geo-border hover:border-geo-gold/50 p-5 transition duration-300 relative overflow-hidden group">
+                        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-geo-gold/10 rounded-full blur-xl group-hover:bg-geo-gold/20 transition duration-500"></div>
+                        <span class="text-xs font-mono font-bold uppercase tracking-wider text-geo-muted block mb-1">
+                            Área Superficial Total (A)
+                        </span>
+                        <div class="flex items-baseline space-x-1.5">
+                            <span id="metric-area" class="text-3xl sm:text-4xl font-display font-black text-geo-gold tracking-tight">
+                                150.00
+                            </span>
+                            <span class="text-base sm:text-lg font-mono font-bold text-geo-ink">cm²</span>
+                        </div>
+                        <div class="mt-2 text-[11px] font-mono text-geo-muted flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-geo-gold"></span>
+                            <span>Superficie exterior total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Exclusiva para la Generatriz del Cono -->
+                <div id="metric-slant-card" class="bg-geo-surface rounded-2xl border border-geo-border p-4 hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-mono uppercase text-geo-muted">Generatriz del Cono (g = √(r² + h²)):</span>
+                            <div class="flex items-baseline space-x-1 mt-0.5">
+                                <span id="metric-slant" class="text-2xl font-display font-bold text-geo-ink">8.06</span>
+                                <span class="text-xs font-mono text-geo-gold">cm</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-mono text-geo-muted block">Área Base: <strong id="metric-cone-base" class="text-geo-ink">50.27 cm²</strong></span>
+                            <span class="text-xs font-mono text-geo-muted block">Área Lateral: <strong id="metric-cone-lateral" class="text-geo-ink">101.32 cm²</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR 3D (LIVE 3D PREVIEW - DRAG TO ROTATE) -->
+                <div class="bg-geo-surface rounded-2xl border border-geo-border p-5 shadow-2xl flex-1 flex flex-col justify-between relative overflow-hidden">
+                    
+                    <!-- Encabezado del Visor 3D y Botones Rápidos -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-geo-border/80 pb-3 z-10">
+                        <div>
+                            <h3 class="text-sm font-mono uppercase tracking-widest text-geo-ink font-bold flex items-center gap-2">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-geo-gold animate-ping"></span>
+                                VISTA 3D EN VIVO (ARRASTRA PARA ROTAR)
+                            </h3>
+                            <p class="text-[11px] text-geo-muted font-mono">Usa clic izquierdo para rotar y la rueda del ratón para hacer zoom</p>
+                        </div>
+
+                        <!-- Botones de Utilidad 3D -->
+                        <div class="flex items-center gap-2">
+                            <!-- Alternar modo alambre / sólido -->
+                            <button id="btn-wireframe" onclick="toggleWireframe()" title="Alternar Malla"
+                                    class="px-2.5 py-1 text-xs font-mono bg-geo-panel hover:bg-geo-gold/20 text-geo-muted hover:text-geo-gold border border-geo-border rounded-lg transition">
+                                ⬡ Malla
+                            </button>
+                            <!-- Alternar rotación automática -->
+                            <button id="btn-autorotate" onclick="toggleAutoRotate()" title="Alternar Rotación Automática"
+                                    class="px-2.5 py-1 text-xs font-mono bg-geo-panel hover:bg-geo-gold/20 text-geo-gold border border-geo-border rounded-lg transition">
+                                ⟳ Auto-Giro
+                            </button>
+                            <!-- Restablecer cámara al ángulo original -->
+                            <button onclick="resetCamera()" title="Restablecer Posición"
+                                    class="px-2.5 py-1 text-xs font-mono bg-geo-panel hover:bg-geo-gold/20 text-geo-muted hover:text-geo-ink border border-geo-border rounded-lg transition">
+                                🎯 Centrar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LIENZO 3D (CANVAS THREE.JS) -->
+                    <div class="relative w-full h-[360px] sm:h-[420px] rounded-xl overflow-hidden bg-geo-void border border-geo-border/60 my-3 flex items-center justify-center">
+                        <!-- Contenedor donde Three.js dibuja el mundo 3D -->
+                        <div id="canvas-container" class="w-full h-full"></div>
+
+                        <!-- Guía flotante con instrucciones para el usuario -->
+                        <div class="absolute bottom-3 left-3 pointer-events-none bg-geo-panel/80 backdrop-blur border border-geo-border px-3 py-1.5 rounded-lg text-[10px] font-mono text-geo-muted flex items-center gap-2">
+                            <span>🖱️ Rotar: Arrastrar ratón</span>
+                            <span>|</span>
+                            <span>🔍 Zoom: Rueda</span>
+                        </div>
+
+                        <!-- Etiqueta flotante con la medida actual del objeto 3D -->
+                        <div id="live-dimension-badge" class="absolute top-3 right-3 pointer-events-none bg-geo-panel/90 border border-geo-gold/40 text-geo-gold px-3 py-1 rounded-lg text-xs font-mono font-bold shadow-lg">
+                            a = 5 cm
+                        </div>
+                    </div>
+
+                    <!-- Pie del visor -->
+                    <div class="flex items-center justify-between text-xs font-mono text-geo-muted border-t border-geo-border/60 pt-3">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-geo-gold"></span>
+                            Renderizado con WebGL & Material Dorado
+                        </span>
+                        <span class="text-[11px] text-geo-muted">Geometría Paramétrica</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ====================================================================
+         5. PIE DE PÁGINA (FOOTER)
+         ==================================================================== -->
+    <footer class="border-t border-geo-border py-6 text-center text-xs text-geo-muted font-mono mt-auto bg-geo-surface/50">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <span>GeoGold 3D · Proyecto Académico de Geometría Espacial</span>
+            <span class="text-geo-gold font-bold">Desarrollado con HTML5, Tailwind CSS y Three.js</span>
+        </div>
+    </footer>
+
+    <!-- ====================================================================
+         6. CARGA DEL ARCHIVO JAVASCRIPT EXTERNO (script.js)
+         ==================================================================== -->
+    <script src="js\script.js"></script>
+</body>
+</html>

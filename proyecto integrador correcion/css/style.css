@@ -1,0 +1,118 @@
+/* ==========================================================================
+   GEOGOLD 3D - HOJA DE ESTILOS PERSONALIZADA (style.css)
+   ==========================================================================
+   Este archivo contiene las personalizaciones visuales que complementan a
+   Tailwind CSS, enfocándose en:
+   1. Estilizar las barras deslizadoras (Sliders / input range) con estética dorada.
+   2. Ajustar los campos numéricos para ocultar las flechas por defecto.
+   3. Configurar el comportamiento del puntero del ratón sobre el visor 3D.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. ESTILO BASE DE LA BARRA DESLIZADORA (INPUT TYPE="RANGE")
+   --------------------------------------------------------------------------
+   - Quita el aspecto predeterminado y plano que le dan los navegadores.
+   - Crea un carril cilíndrico delgado con fondo carbón (#1A1B20) y borde sutil.
+   - Al pasar el cursor por encima, el borde se ilumina tenuemente en dorado.
+-------------------------------------------------------------------------- */
+input[type="range"] {
+    -webkit-appearance: none; /* Elimina el estilo por defecto en Chrome/Safari/Edge */
+    appearance: none;         /* Estándar moderno de apariencia neutra */
+    width: 100%;              /* Ocupa todo el ancho disponible del contenedor */
+    height: 8px;              /* Grosor de la pista / barra */
+    background: #1A1B20;      /* Color de fondo oscuro (panel) */
+    border: 1px solid #2B2D35;/* Borde gris oscuro */
+    border-radius: 9999px;    /* Bordes completamente redondeados (forma de píldora) */
+    outline: none;            /* Elimina el recuadro azul predeterminado al hacer clic */
+    cursor: pointer;          /* Muestra el cursor de mano interactivo */
+    transition: border-color 0.2s ease; /* Transición suave de color al pasar el ratón */
+}
+
+/* Efecto hover: cuando el usuario pasa el mouse sobre la barra */
+input[type="range"]:hover {
+    border-color: #D4AF37;    /* El borde cambia al dorado GeoGold */
+}
+
+/* --------------------------------------------------------------------------
+   2. BOTÓN O MANECILLA DEL SLIDER (THUMB) - NAVEGADORES WEBKIT (CHROME, EDGE, BRAVE)
+   --------------------------------------------------------------------------
+   El "thumb" es el círculo que el usuario arrastra para cambiar las medidas.
+-------------------------------------------------------------------------- */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Quita el diseño por defecto del círculo */
+    appearance: none;
+    width: 22px;              /* Diámetro del círculo */
+    height: 22px;
+    border-radius: 50%;       /* Forma circular perfecta */
+    background: #D4AF37;      /* Color dorado principal GeoGold */
+    border: 2px solid #090A0C;/* Borde negro carbón que resalta contra el fondo */
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.65); /* Resplandor dorado suave (Glow) */
+    cursor: grab;             /* Cursor de "mano abierta" indicando que se puede arrastrar */
+    transition: transform 0.15s ease, background-color 0.15s ease; /* Suavidad al interactuar */
+}
+
+/* Cuando el usuario pasa el mouse sobre el círculo dorado */
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);   /* Crece un 15% para dar feedback visual de interactividad */
+    background: #F6E05E;      /* Se ilumina con un dorado más brillante */
+}
+
+/* Mientras el usuario mantiene presionado el ratón y arrastra */
+input[type="range"]::-webkit-slider-thumb:active {
+    cursor: grabbing;         /* Cambia el cursor a "mano cerrada" (agarrando) */
+    transform: scale(1.25);   /* Crece un 25% mientras se desliza */
+    box-shadow: 0 0 20px rgba(246, 224, 94, 0.95); /* Aumenta el resplandor dorado */
+}
+
+/* --------------------------------------------------------------------------
+   3. BOTÓN O MANECILLA DEL SLIDER (THUMB) - NAVEGADOR FIREFOX
+   --------------------------------------------------------------------------
+   Firefox utiliza su propio prefijo (-moz) para el thumb.
+-------------------------------------------------------------------------- */
+input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #D4AF37;
+    border: 2px solid #090A0C;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.65);
+    cursor: grab;
+    transition: transform 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.25);
+}
+
+/* --------------------------------------------------------------------------
+   4. ESTILIZADO DE LOS CAMPOS NUMÉRICOS (INPUT TYPE="NUMBER")
+   --------------------------------------------------------------------------
+   Por defecto, los navegadores colocan flechas de incremento/decremento que
+   suelen descuadrar los diseños limpios. Aquí las ocultamos para que se vea
+   como una pantalla digital moderna.
+-------------------------------------------------------------------------- */
+/* Para Chrome, Safari, Edge y Opera */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Para Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* --------------------------------------------------------------------------
+   5. CURSOR PARA EL CANVAS TRIDIMENSIONAL (THREE.JS)
+   --------------------------------------------------------------------------
+   Indica visualmente al usuario que el área 3D es interactiva y rotable.
+-------------------------------------------------------------------------- */
+#canvas-container canvas {
+    cursor: grab;   /* Cursor de mano abierta para invitar a arrastrar */
+}
+
+#canvas-container canvas:active {
+    cursor: grabbing; /* Mano cerrada mientras se está girando la figura con el ratón */
+}
