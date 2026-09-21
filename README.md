@@ -92,5 +92,3 @@ Este proyecto es una aplicación web puramente frontend, por lo que **no requier
 - Proyecto Integrador de Desarrollo Web Frontend — **Politécnico Internacional**
 - Año: 2026
 
-- Proyecto Integrador de Desarrollo Web Frontend — **Politécnico Internacional**
-- Año: 2024
